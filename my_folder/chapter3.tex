@@ -60,11 +60,123 @@
 Для измерения используется 32-разрядный счётчик, один отсчёт которого равняется 8 нс (125 МГц).
 
 Реализация <<в лоб>> не может работать стабильно на целевой ПЛИС из-за задержек на цепочке переносов в 
-32-разрядном сумматоре. Для корректной работы на такой частоте необходимо конвейеризировать операцию инкрементации
-счётчика -- отдельно прибавлять 1 к двум младшим байтам и защёлкнутый перенос к двум старшим. Схема такого счётчика представлена на
- 
+32-разрядном сумматоре. Для корректной работы на такой частоте необходимо конвейеризировать счётчик (\firef{fig:t-cnt}).
 
+\begin{figure}[ht!] 
+	\center
+	\includegraphics [scale=0.7] {my_folder/images//t_cnt}
+	\caption{Конвейерный 32-х разрядный счётчик} 
+	\label{fig:t-cnt}  
+\end{figure}
 
+К младшим байтам (регистр \emph{LSB}) каждый такт прибавляется 1, текущее значение младших байт защёлкивается в регистре \emph{latched LSB}.
+При переполнении, перенос защёлкивается в регистре \emph{latched carry}. К старшим байтам (регистр \emph{MSB}) прибавляется сохранённый перенос из-за
+младших байт. Выход счётчика -- комбинация значений регистров \emph{MSB} и \emph{latched LSB}.
 
+\begin{flushright}
+Листинг 3.1. Реализация на языке System Verilog
+\end{flushright}
+\lstset{
+	numbersep = 5pt,
+	stepnumber = 1
+}
+\begin{lstlisting}
+// pipelined counter
+
+	logic [T_CNT_WIDTH/2-1 : 0] high_bytes = 0;
+	logic [T_CNT_WIDTH/2-1 : 0] latched_low_bytes = 0;
+	logic [T_CNT_WIDTH/2-1 : 0] low_bytes = 0;
+	logic [T_CNT_WIDTH/2-1 : 0] low_bytes_plus_1;
+	logic carry;
+
+	assign {carry, low_bytes_plus_1} = low_bytes + 1;
+
+	//incrementing low bytes
+	always_ff @(posedge clk_i, negedge arst_i) 
+		if (~arst_i) low_bytes = 0;
+		else low_bytes <= low_bytes_plus_1;
+
+	//latching low bytes for 1 cycle
+	always_ff @(posedge clk_i, negedge arst_i) 
+		if (~arst_i) latched_low_bytes = 0;
+		else latched_low_bytes <= low_bytes;
+
+	logic latched_carry = 0;
+
+	//latching carry
+	always_ff @(posedge clk_i, negedge arst_i) 
+		if (~arst_i) latched_carry = 0;
+		else latched_carry <= carry;
+
+	//adding latched carry to high bytes
+	always_ff @(posedge clk_i, negedge arst_i)
+		if (~arst_i) high_bytes = 0;
+		else high_bytes <= high_bytes + latched_carry;
+
+	//seting t_cnt
+	always_ff @(posedge clk_i, negedge arst_i) 
+		if (~arst_i) t_cnt = 0;
+		else t_cnt <= {high_bytes, latched_low_bytes};
+\end{lstlisting}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics [scale=0.7] {my_folder/images//stb_gen_fsm}
+	\caption{Конечный автомат модуля \emph{stb\_gen}} 
+	\label{fig:stb-gen-fsm}  
+\end{figure}
+
+\FloatBarrier
+
+Нас \firef{fig:stb-gen-fsm} представлен конечный автомат модуля \emph{stb\_gen}. Вся логика максимально упрощена, так как, если
+на одной регистровой передаче будет много комбинаторной логики, при синтезе под целевую ПЛИС не получится выдержать требуемые $ t_{setup} $ и $ t_{hold} $.
+
+\begin{itemize}[label={}]
+	\item FIND\_EDGE\_1 -- состояние после сброса, ожидание первого фронта на входе \emph{sig\_i} 
+	\item FIND\_EDGE\_2 -- ожидание второго фронта на входе \emph{sig\_i} 
+	\item WRITE\_START -- запись текущего значения \emph{t\_cnt} в \emph{t\_start}
+	\item FIND\_EDGE\_3 -- ожидание третьего фронта на входе \emph{sig\_i}
+	\item WRITE\_END -- запись текущего значения \emph{t\_cnt} в \emph{t\_end}
+	\item COUNT\_PERIOD -- вычисление периода сигнала ($ \emph{t\_end} - \emph{t\_start}) $
+	\item WAIT\_COUNT\_PERIOD -- задержка на 1 такт
+	\item COUNT\_STROBE -- начало расчёта времени начала и конца отрицательного импульса на выходе стробы
+	\item WAIT\_STB\_END -- ожидание конца стробы и переход к расчёту новой\\
+\end{itemize}
+
+Таким образом, модуль определяет частоту входного сигнала и начинает бесконечно выдавать стробы.
+
+Помимо 32-х разрядного счётчика, конвейеризация была необходима для всех операций с 32-х битными числами. В модуле \emph{two\_cycle\_32\_adder}
+реализован двухтактный сумматор, однако использованный подход идентичен тому, что используется в счётчике.
+
+Отдельного упоминания стоит оптимизация операции проверки на равенство двух чисел. Для этого необходимо сравнить попарно все биты
+чисел, что выполняется параллельно и не должно увеличивать максимальный путь, однако при синтезе получалась цепочка с последовательным
+сравнением всех разрядов (\firef{fig:eq}).\\
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics [scale=0.7] {my_folder/images//eq}
+	\caption{Конечный автомат модуля \emph{stb\_gen}} 
+	\label{fig:eq}  
+\end{figure}
+
+\FloatBarrier
+
+Для исправления этого пришлось явно заменить операцию сравнения на исключающее ИЛИ и свёртку по ИЛИ-НЕ.
+
+\begin{flushright}
+Листинг 3.2. Реализация сравнения
+\end{flushright}
+\lstset{
+	numbersep = 5pt,
+	stepnumber = 1
+}
+\begin{lstlisting}
+always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_zero_hold_res[15:0]);  //t_cnt == latched_zero_hold_res;
+	always_ff @(posedge clk_i) is_zero_hold_start_hi <=  ~|(t_cnt[31:16] ^ latched_zero_hold_res[31:16]);  //t_cnt == latched_zero_hold_res;
+	always_ff @(posedge clk_i) is_zero_hold_start <= is_zero_hold_start_lo & is_zero_hold_start_hi; 
+\end{lstlisting}
+
+При работе модуль не выдаёт стробы, а держит компаратор в защёлкнутом состоянии. Для запроса стробы используется пара сигналов
+\emph{stb\_req\_i} и \emph{stb\_valid\_o}. При выдаче стробы, с компаратора снимается защёлка на короткое время, после чего устанавливается обратно.
 
 \newpage
