@@ -264,9 +264,11 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 
 \subsection{Программный интерфейс}
 
-Управление измерительным модулем осуществляется через memory-mapped регистры.
+Управление измерительным модулем осуществляется через memory-mapped регистры ( \firef{fig:stb-reg}, \firef{fig:delta-reg},
+\firef{fig:thr-reg}, \firef{fig:mu-ctl-reg}, \firef{fig:mu-p-reg}
+).
 
-\begin{register}{H}{STB\_GEN\_CTL}{0x1}% name=example
+\begin{register}{H}{STB\_GEN\_CTL}{}% name=example
 \label{example}%
 \regfield{}{29}{3}{{reserved}}%
 \regfield{clk\_sel}{1}{2}{{1/0}}%
@@ -281,14 +283,120 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 \reglabel{(r)}\regnewline%
 \end{register}
 
-\begin{register}{H}{STB\_GEN\_PERIOD}{0x3}% name=example
+\begin{register}{H}{STB\_GEN\_PERIOD}{}% name=example
 \label{example}%
 \regfield{period}{32}{0}{{read only}}%
 \reglabel{(r)} \regnewline%
 \end{register}
 
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//blank}
+	\caption{Регистры для управления модулем \emph{stb\_gen}} 
+	\label{fig:stb-reg}  
+\end{figure}
+
+\noindent
+\begin{itemize}[label={}]
+	\item \textbf{run} -- запись 1 начинает измерение частоты входного сигнала
+	\item \textbf{mux} -- выбор канала для измерения (0 -- первый канал, 1 -- второй)
+	\item \textbf{clk\_sel} -- выбор источника тактового сигнала для генерации строб (0 -- внутренний, 1 -- внешний)
+	\item \textbf{rdy} -- 1 при окончании измерения
+	\item \textbf{period} -- измеренное значение периода (кол-во отсчётов счётчика)\\
+\end{itemize}
+
+\begin{register}{H}{CH\_CTL\_DELTA\_REG}{}% name=example
+\label{example}%
+\regfield{}{7}{26}{{reserved}}%
+\regfield{delay delta}{10}{16}{{default: 0x01}}%
+\regfield{threshold delta}{16}{0}{{default: 0x01}}%
+\reglabel{(r/w)} \regnewline%
+
+\end{register}
 
 
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//blank}
+	\caption{Регистр для задания параметров измерения} 
+	\label{fig:delta-reg}  
+\end{figure}
+\FloatBarrier
+
+\noindent
+\begin{itemize}[label={}]
+	\item \textbf{threshold delta} -- шаг изменения порогового напряжения (разрешение по оси OY)
+	\item \textbf{delay delta} -- шаг изменения задержки (разрешение по оси OX)\\
+\end{itemize}
+
+
+\begin{register}{H}{W\_THRESHOLD}{}% name=example
+\label{example}%
+\regfield{}{30}{2}{{reserved}}%
+\regfield{dac2 rdy}{1}{1}{{1/0}}%
+\regfield{dac1 rdy}{1}{0}{{1/0}}%
+\reglabel{(r)} \regnewline%
+
+\regfield{}{16}{16}{{reserved}}%
+\regfield{threshold}{16}{0}{{}}%
+\reglabel{(w)}\regnewline%
+\end{register}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//blank}
+	\caption{Регистр для установки порогового напряжения} 
+	\label{fig:thr-reg}  
+\end{figure}
+\FloatBarrier
+\noindent
+\begin{itemize}[label={}]
+	\item \textbf{dac1/2 rdy} -- ЦАП на первом/втором канале установил указанное напряжение
+	\item \textbf{threshold} -- запись в это поле устанавливает заданное напряжение на оба канала\\
+\end{itemize}
+\newpage
+\FloatBarrier
+
+\begin{register}{H}{MU\_CTL\_1/2}{}% name=example
+\label{example}%
+\regfield{}{31}{1}{{reserved}}%
+\regfield{run}{1}{0}{{1/0}}%
+\reglabel{(r/w)} \regnewline%
+\end{register}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//blank}
+	\caption{Регистр для управление измерением канала} 
+	\label{fig:mu-ctl-reg}  
+\end{figure}
+\FloatBarrier
+\begin{itemize}[label={}]
+	\item \textbf{run} -- запись 1 начинает измерение\\
+\end{itemize}
+
+
+\begin{register}{H}{MU\_CH\_1/2\_VAL}{}% name=example
+\label{example}%
+\regfield{}{15}{17}{{reserved}}%
+\regfield{measured point}{16}{1}{{}}%
+\regfield{valid}{1}{0}{{1/0}}%
+\reglabel{(r)} \regnewline%
+\end{register}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//blank}
+	\caption{Регистр для чтения измеренных значений} 
+	\label{fig:mu-p-reg}  
+\end{figure}
+\FloatBarrier
+\begin{itemize}[label={}]
+	\item \textbf{measured point} -- значение измеренной точки
+	\item \textbf{valid} -- 1 если FIFO не пустое и прочитано измеренное значение\\
+\end{itemize}
+
+\FloatBarrier
 
 
 \newpage
