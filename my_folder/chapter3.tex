@@ -262,6 +262,33 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 	\label{fig:p-find}  
 \end{figure}
 
+\subsection{Программный интерфейс}
+
+Управление измерительным модулем осуществляется через memory-mapped регистры.
+
+\begin{register}{H}{STB\_GEN\_CTL}{0x1}% name=example
+\label{example}%
+\regfield{}{29}{3}{{reserved}}%
+\regfield{clk\_sel}{1}{2}{{1/0}}%
+\regfield{mux}{1}{1}{{1/0}}%
+\regfield{run}{1}{0}{{1/0}}%
+\reglabel{(w)} \regnewline%
+
+\regfield{}{29}{3}{{reserved}}%
+\regfield{clk\_sel}{1}{2}{{1/0}}%
+\regfield{mux}{1}{1}{{1/0}}%
+\regfield{rdy}{1}{0}{{1/0}}%
+\reglabel{(r)}\regnewline%
+\end{register}
+
+\begin{register}{H}{STB\_GEN\_PERIOD}{0x3}% name=example
+\label{example}%
+\regfield{period}{32}{0}{{read only}}%
+\reglabel{(r)} \regnewline%
+\end{register}
+
+
+
 
 
 \newpage
