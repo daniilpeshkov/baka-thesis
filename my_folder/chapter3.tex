@@ -52,7 +52,7 @@
 Все описанные ранее модули подключены в модуле верхнего уровня \emph{measure\_unit}. В нём же
 реализована вся логика управлением проведением измерений через шину Wishbone.
 
-Далее будут отдельно рассмотрен каждый модуль.
+Далее будет отдельно рассмотрен каждый модуль.
 
 \subsection{Модуль stb\_gen}
 
@@ -155,7 +155,7 @@
 \begin{figure}[ht!] 
 	\center
 	\includegraphics [scale=0.7] {my_folder/images//eq}
-	\caption{Конечный автомат модуля \emph{stb\_gen}} 
+	\caption{Реализация сравнения при синтезе} 
 	\label{fig:eq}  
 \end{figure}
 
@@ -178,5 +178,90 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 
 При работе модуль не выдаёт стробы, а держит компаратор в защёлкнутом состоянии. Для запроса стробы используется пара сигналов
 \emph{stb\_req\_i} и \emph{stb\_valid\_o}. При выдаче стробы, с компаратора снимается защёлка на короткое время, после чего устанавливается обратно.
+
+Для тестирования модуля были написаны тестбенчи \emph{tb\_stb\_gen.sv} и \emph{tb2\_stb\_gen.sv}. На \firef{fig:tb-stb-gen} и \firef{fig:tb-stb-gen-out}
+представлены результаты моделирования.
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  [scale=0.7] {my_folder/images//tb_stb_gen}
+	\caption{Пример определения частоты входного сигнала} 
+	\label{fig:tb-stb-gen}  
+\end{figure}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  [scale=0.8] {my_folder/images//tb_stb_gen_out}
+	\caption{Вывод в консоль при симуляции} 
+	\label{fig:tb-stb-gen-out}  
+\end{figure}
+\FloatBarrier
+
+Видно, что сигналы с периодом, кратным 8 нс измеряются корректно, при измерении других -- ошибка меньше 8 нс.
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  [scale=0.3] {my_folder/images//stb_10mhz}
+	\caption{Генерация строб для 10 Мгц} 
+	\label{fig:stb-10mhz}  
+\end{figure}
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  [scale=0.3] {my_folder/images//stb_200khz}
+	\caption{Генерация строб для 200 кГц} 
+	\label{fig:stb-200khz}  
+\end{figure}
+
+\FloatBarrier
+
+На \firef{fig:stb-10mhz} и \firef{fig:stb-200khz} приведены осциллограммы генерации строб для 10 МГц и 200 кГц.
+Видно, что точно определить не кратную частоту невозможно -- при генерации получается стробы с частотой 9.6 Мгц, а не 10 Мгц.
+
+\subsection{Модуль \emph{ch\_measure\_ctl}}
+
+Данный модуль управляет измерением одного из каналов -- выставляет необходимое пороговое напряжение и задержку, а
+затем выставляет запрос на стробу. После прохода стробы, в зависимости от текущего и предыдущего выхода компаратора, принимается решение
+о следующем значении задержки и порогового напряжения.
+
+Для ускорения снятия осциллограммы применяется предсказание направления изменения сигнала. Для этого, после нахождения очередной точки,
+изменяется только задержка, после чего на основании выхода компаратора принимается решение -- измеряемый сигнал нарастает или уменьшается.
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  [scale=0.7] {my_folder/images//ch_ctl}
+	\caption{Конечный автомат модуля \emph{ch\_measure\_ctl}} 
+	\label{fig:ch-ctl-fsm}  
+\end{figure}
+
+\FloatBarrier
+
+На \firef{fig:ch-ctl-fsm} представлен конечный автомат описываемого модуля.
+
+\noindent
+\begin{itemize}[label={}]
+	\item IDLE -- состояние покоя 
+	\item SET\_THRESHOLD -- отправление запроса на установку порогового напряжения ($ \emph{threshold\_wre\_o} = 1 $)
+	\item WAIT\_THRESHOLD -- ожидание установки порогового напряжения ($ \emph{threshold\_rdy\_i} == 1 $)
+	\item REQ\_STROBE -- установка запроса на стробу ($ \emph{stb\_req\_o} = 1 $)
+	\item WAIT\_STROBE -- ожидание прохода стробы ($ \emph{stb\_valid\_i} == 1 $)
+	\item SAVE\_CMP\_RES -- обновление текущего и предыдущего выхода компаратора
+	\item PROCESS\_RES -- принятие решения о статусе поиска точки (определение направления поиска или поиск точки)
+					и о выборе направления поиска
+	\item UPDATE\_CONF -- обновление регистров с текущей задержкой и пороговым напряжением на основании принятого ранее решения\\
+\end{itemize}
+
+В состоянии PROCESS\_RES, в зависимости от выхода компаратора переключаются два других конечных автомата, отвечающих за статус поиска точки и направления поиска.
+
+На \firef{fig:p-find} приведён пример снятия осциллограммы сигнала.
+
+\begin{figure}[ht!] 
+	\center
+	\includegraphics  {my_folder/images//p_find}
+	\caption{Пример снятия осциллограммы с угадыванием направления изменения сигнала} 
+	\label{fig:p-find}  
+\end{figure}
+
+
 
 \newpage

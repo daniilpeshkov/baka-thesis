@@ -1,27 +1,16 @@
-%%% Не мянять - Do not modify
-%%
-%%
 \clearpage                                  % В том числе гарантирует, что список литературы в оглавлении будет с правильным номером страницы
-%\hypersetup{ urlcolor=black }               % Ссылки делаем чёрными
-%\providecommand*{\BibDash}{}                % В стилях ugost2008 отключаем использование тире как разделителя 
 \urlstyle{rm}                               % ссылки URL обычным шрифтом
-\ifdefmacro{\microtypesetup}{\microtypesetup{protrusion=false}}{} % не рекомендуется применять пакет микротипографики к автоматически генерируемому списку литературы
-%\newcommand{\fullbibtitle}{Список литературы} % (ГОСТ Р 7.0.11-2011, 4)
-%\insertbibliofull  
-%\noindent
-%\begin{group}
-\chapter*{Список использованных источников}	
+\chapter*{Список использованных источников}
 \label{references}
 \addcontentsline{toc}{chapter}{Список использованных источников}	% в оглавление 
-\printbibliography[env=SSTfirst]                         % Подключаем Bib-базы
-%\ifdefmacro{\microtypesetup}{\microtypesetup{protrusion=true}}{}
-%\urlstyle{tt}                               % возвращаем установки шрифта ссылок URL
-%\hypersetup{ urlcolor={urlcolor} }          % Восстанавливаем цвет ссылок
-
-
-
-%\urlstyle{rm}                               % ссылки URL обычным шрифтом
-%\ifdefmacro{\microtypesetup}{\microtypesetup{protrusion=false}}{} % не рекомендуется применять пакет микротипографики к автоматически генерируемому списку литературы
-%\insertbibliofull                           % Подключаем Bib-базы
-%\ifdefmacro{\microtypesetup}{\microtypesetup{protrusion=true}}{}
-%\urlstyle{tt}                               % возвращаем установки шрифта ссылок URL
+\printbibliography[env=SSTfirst] 
+\noindent
+1. Пешков Д.В., Михайловский В.С. Калибрующее устройство для средств высокоточной синхронизации распределённых систем потоковой обработки данных // Экономика и Индустрия 5.0 в условиях новой реальности (ИНПРОМ-2022): сборник трудов Всероссийской научно-практической конференции с зарубежным участием 28-30 апреля 2022. - СПб.: ПОЛИТЕХ-ПРЕСС, 2022. - С. 680-684.\\
+2. AD5662BRMZ Datasheet [Электронный ресурс] // Analog Devices URL: https://www.analog.com/media/en/technical-documentation/data-sheets/ad5662.pdf (дата обращения: 16.06.2022).\\
+3. ADCMP582BCPZ Datasheet [Электронный ресурс] // Analog Devices URL: https://www.analog.com/media/en/technical-documentation/data-sheets/adcmp580\_581\_582.pdf (дата обращения: 16.06.2022).\\
+4. FT2232HL Datasheet [Электронный ресурс] // FTDI Chip URL: https://www.ftdichip.com/Support/Documents/DataSheets/ICs/DS\_FT2232H.pdf (дата обращения: 16.06.2022).\\
+5. Grzegorz Daniluk. White Rabbit calibration procedure [Электронный ресурс] // CERN BE-CO-HT URL: https://www.ohwr.org/project/white-rabbit/uploads/76cdbdbadccc9d6c54d5caf246550fbf/WR\_Calibration-v1.1-20151109.pdf (дата обращения: 16.06.2022).\\
+6. GW1N series of FPGA Products Data Sheet DS100-2.7.1E [Электронный ресурс] // GOWIN Semiconductor Corp. URL: https://gowinsemi.com/upload/database\_doc/1752/document/6296db1b68af5.pdf (дата обращения: 16.06.2022).\\
+7. GowinSynthesis User Guide [Электронный ресурс] // GOWIN Semiconductor Corp. URL: http://cdn.gowinsemi.com.cn/SUG550E.pdf\\
+8. Gowin FPGA Primitive User Guide [Электронный ресурс] // GOWIN Semiconductor Corp. URL: https://www.gowinsemi.com/upload/database\_doc/39/document/5bfcff2ce0b72.pdf\\
+9. SY100EP196V Datasheet [Электронный ресурс] // Microchip URL: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ProductDocuments/DataSheets/SY100EP196V-3.3V-5V-2.5GHz-Programmable-Delay-Chip-with-Fine-Tune-Control-DS20006520A.pdf \\
