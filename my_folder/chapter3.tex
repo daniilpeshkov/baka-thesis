@@ -202,14 +202,14 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 \begin{figure}[ht!] 
 	\center
 	\includegraphics  [scale=0.3] {my_folder/images//stb_10mhz}
-	\caption{Генерация строб для 10 Мгц} 
+	\caption{Генерация стробов для 10 Мгц} 
 	\label{fig:stb-10mhz}  
 \end{figure}
 
 \begin{figure}[ht!] 
 	\center
 	\includegraphics  [scale=0.3] {my_folder/images//stb_200khz}
-	\caption{Генерация строб для 200 кГц} 
+	\caption{Генерация стробов для 200 кГц} 
 	\label{fig:stb-200khz}  
 \end{figure}
 
@@ -264,9 +264,8 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 
 \subsection{Программный интерфейс}
 
-Управление измерительным модулем осуществляется через memory-mapped регистры ( \firef{fig:stb-reg}, \firef{fig:delta-reg},
-\firef{fig:thr-reg}, \firef{fig:mu-ctl-reg}, \firef{fig:mu-p-reg}
-).
+Управление измерительным модулем осуществляется через регистры, размещённые в адресном пространстве процессора (memory-mapped) на шине Wishbone[14] ( \firef{fig:stb-reg}, \firef{fig:delta-reg},
+\firef{fig:thr-reg}, \firef{fig:mu-ctl-reg}, \firef{fig:mu-p-reg}).
 
 \begin{register}{H}{STB\_GEN\_CTL}{}% name=example
 \label{example}%
@@ -300,7 +299,7 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 \begin{itemize}[label={}]
 	\item \textbf{run} -- запись 1 начинает измерение частоты входного сигнала
 	\item \textbf{mux} -- выбор канала для измерения (0 -- первый канал, 1 -- второй)
-	\item \textbf{clk\_sel} -- выбор источника тактового сигнала для генерации строб (0 -- внутренний, 1 -- внешний)
+	\item \textbf{clk\_sel} -- выбор источника тактового сигнала для генерации стробов (0 -- внутренний, 1 -- внешний)
 	\item \textbf{rdy} -- 1 при окончании измерения
 	\item \textbf{period} -- измеренное значение периода (кол-во отсчётов счётчика)\\
 \end{itemize}
@@ -397,6 +396,8 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 \end{itemize}
 
 \FloatBarrier
+
+
 
 
 \newpage
