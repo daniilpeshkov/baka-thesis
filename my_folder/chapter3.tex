@@ -1,4 +1,4 @@
-\chapter{Разработка аппаратного описания управляющего устройства}
+\chapter{Разработка аппаратной части управляющего устройства}
 
 Все исходные коды аппаратных описаний находятся в директории \emph{/rtl/}.
 
@@ -33,7 +33,8 @@
 
 \section{Измерительный модуль}
 
-Измерительный модуль выдаёт все необходимые управляющие сигналы для проведения измерений и логически разделён на несколько компонентов (\firef{fig:mu-struct}):
+Измерительный модуль выдаёт все необходимые управляющие сигналы для проведения измерений и логически разделён на несколько
+компонентов:
 
 \begin{itemize}
 	\item \emph{stb\_gen} -- модуль, измеряющий частоту сигнала и генерирующий стробы
@@ -45,11 +46,11 @@
 \begin{figure}[ht!] 
 	\center
 	\includegraphics [scale=0.7] {my_folder/images//mu_struct}
-	\caption{Структурная схема измерительного модуля (для одного канала)} 
+	\caption{Структурная схема измерительного модуля (\emph{measure\_unit})} 
 	\label{fig:mu-struct}  
 \end{figure}
 
-Все описанные ранее модули подключены в модуле верхнего уровня \emph{measure\_unit}. В нём же
+Все описанные ранее модули подключены в модуле верхнего уровня \emph{measure\_unit} (\firef{fig:mu-struct}). В нём же
 реализована вся логика управлением проведением измерений через шину Wishbone.
 
 Далее будет отдельно рассмотрен каждый модуль.
@@ -58,6 +59,9 @@
 
 Для определения частоты измеряемого сигнала необходимо измерить время между двумя фронтами.
 Для измерения используется 32-разрядный счётчик, один отсчёт которого равняется 8 нс (125 МГц).
+
+Для измерения 1 с необходима разрядность 27 бит, однако для возможности измерять сигналы с меньшей частотой 
+и кратности степени двойки разрядность увеличена до 32 бит.
 
 Реализация <<в лоб>> не может работать стабильно на целевой ПЛИС из-за задержек на цепочке переносов в 
 32-разрядном сумматоре. Для корректной работы на такой частоте необходимо конвейеризировать счётчик (\firef{fig:t-cnt}).
@@ -73,51 +77,12 @@
 При переполнении, перенос защёлкивается в регистре \emph{latched carry}. К старшим байтам (регистр \emph{MSB}) прибавляется сохранённый перенос из-за
 младших байт. Выход счётчика -- комбинация значений регистров \emph{MSB} и \emph{latched LSB}.
 
-\begin{flushright}
-Листинг 3.1. Реализация на языке System Verilog
-\end{flushright}
+
 \lstset{
 	numbersep = 5pt,
 	stepnumber = 1
 }
-\begin{lstlisting}
-// pipelined counter
 
-	logic [T_CNT_WIDTH/2-1 : 0] high_bytes = 0;
-	logic [T_CNT_WIDTH/2-1 : 0] latched_low_bytes = 0;
-	logic [T_CNT_WIDTH/2-1 : 0] low_bytes = 0;
-	logic [T_CNT_WIDTH/2-1 : 0] low_bytes_plus_1;
-	logic carry;
-
-	assign {carry, low_bytes_plus_1} = low_bytes + 1;
-
-	//incrementing low bytes
-	always_ff @(posedge clk_i, negedge arst_i) 
-		if (~arst_i) low_bytes = 0;
-		else low_bytes <= low_bytes_plus_1;
-
-	//latching low bytes for 1 cycle
-	always_ff @(posedge clk_i, negedge arst_i) 
-		if (~arst_i) latched_low_bytes = 0;
-		else latched_low_bytes <= low_bytes;
-
-	logic latched_carry = 0;
-
-	//latching carry
-	always_ff @(posedge clk_i, negedge arst_i) 
-		if (~arst_i) latched_carry = 0;
-		else latched_carry <= carry;
-
-	//adding latched carry to high bytes
-	always_ff @(posedge clk_i, negedge arst_i)
-		if (~arst_i) high_bytes = 0;
-		else high_bytes <= high_bytes + latched_carry;
-
-	//seting t_cnt
-	always_ff @(posedge clk_i, negedge arst_i) 
-		if (~arst_i) t_cnt = 0;
-		else t_cnt <= {high_bytes, latched_low_bytes};
-\end{lstlisting}
 
 \begin{figure}[ht!] 
 	\center
@@ -143,7 +108,7 @@
 	\item WAIT\_STB\_END -- ожидание конца стробы и переход к расчёту новой\\
 \end{itemize}
 
-Таким образом, модуль определяет частоту входного сигнала и начинает бесконечно выдавать стробы.
+При записи 1 в регистр управлением данным модулем происходит его сброс, и начинается определение частоты сигнала.
 
 Помимо 32-х разрядного счётчика, конвейеризация была необходима для всех операций с 32-х битными числами. В модуле \emph{two\_cycle\_32\_adder}
 реализован двухтактный сумматор, однако использованный подход идентичен тому, что используется в счётчике.
@@ -163,24 +128,18 @@
 
 Для исправления этого пришлось явно заменить операцию сравнения на исключающее ИЛИ и свёртку по ИЛИ-НЕ.
 
-\begin{flushright}
-Листинг 3.2. Реализация сравнения
-\end{flushright}
 \lstset{
 	numbersep = 5pt,
 	stepnumber = 1
 }
-\begin{lstlisting}
-always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_zero_hold_res[15:0]);  //t_cnt == latched_zero_hold_res;
-	always_ff @(posedge clk_i) is_zero_hold_start_hi <=  ~|(t_cnt[31:16] ^ latched_zero_hold_res[31:16]);  //t_cnt == latched_zero_hold_res;
-	always_ff @(posedge clk_i) is_zero_hold_start <= is_zero_hold_start_lo & is_zero_hold_start_hi; 
-\end{lstlisting}
 
 При работе модуль не выдаёт стробы, а держит компаратор в защёлкнутом состоянии. Для запроса стробы используется пара сигналов
 \emph{stb\_req\_i} и \emph{stb\_valid\_o}. При выдаче стробы, с компаратора снимается защёлка на короткое время, после чего устанавливается обратно.
 
 Для тестирования модуля были написаны тестбенчи \emph{tb\_stb\_gen.sv} и \emph{tb2\_stb\_gen.sv}. На \firef{fig:tb-stb-gen} и \firef{fig:tb-stb-gen-out}
-представлены результаты моделирования.
+представлены результаты моделирования.\\
+
+\FloatBarrier
 
 \begin{figure}[ht!] 
 	\center
@@ -226,6 +185,8 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 
 Для ускорения снятия осциллограммы применяется предсказание направления изменения сигнала. Для этого, после нахождения очередной точки,
 изменяется только задержка, после чего на основании выхода компаратора принимается решение -- измеряемый сигнал нарастает или уменьшается.
+
+Для запроса генерации стробы используются сигналы \emph{stb\_req\_o} и \emph{stb\_valid\_i}, которые подключены к модулю \emph{stb\_gen}.
 
 \begin{figure}[ht!] 
 	\center
@@ -295,14 +256,22 @@ always_ff @(posedge clk_i) is_zero_hold_start_lo <=  ~|(t_cnt[15:0] ^ latched_ze
 	\label{fig:stb-reg}  
 \end{figure}
 
-\noindent
-\begin{itemize}[label={}]
-	\item \textbf{run} -- запись 1 начинает измерение частоты входного сигнала
-	\item \textbf{mux} -- выбор канала для измерения (0 -- первый канал, 1 -- второй)
-	\item \textbf{clk\_sel} -- выбор источника тактового сигнала для генерации стробов (0 -- внутренний, 1 -- внешний)
-	\item \textbf{rdy} -- 1 при окончании измерения
-	\item \textbf{period} -- измеренное значение периода (кол-во отсчётов счётчика)\\
-\end{itemize}
+%\noindent
+%\begin{itemize}[label={}]
+%	\item \textbf{run} -- запись 1 начинает измерение частоты входного сигнала
+%	\item \textbf{mux} -- выбор канала для измерения (0 -- первый канал, 1 -- второй)
+%	\item \textbf{clk\_sel} -- выбор источника тактового сигнала для генерации стробов (0 -- внутренний, 1 -- внешний)
+%	\item \textbf{rdy} -- 1 при окончании измерения
+%	\item \textbf{period} -- измеренное значение периода (кол-во отсчётов счётчика)\\
+%\end{itemize}
+
+\begin{description}
+	\item [run] -- запись 1 начинает измерение частоты входного сигнала
+	\item [mux] -- выбор канала для измерения (0 -- первый канал, 1 -- второй)
+	\item [clk\_sel] -- выбор источника тактового сигнала для генерации стробов (0 -- внутренний, 1 -- внешний)
+	\item [rdy] -- 1 при окончании измерения
+	\item [period] -- измеренное значение периода (кол-во отсчётов счётчика)\\
+\end{description}
 
 \begin{register}{H}{CH\_CTL\_DELTA\_REG}{}% name=example
 \label{example}%
