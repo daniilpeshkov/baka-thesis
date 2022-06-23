@@ -5,7 +5,7 @@
 Листинг П2.1. \emph{stb\_gen.sv}
 \end{flushright}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Verilog]
 module stb_gen #(
 	parameter OFFSET = 20,
 	parameter T_CNT_WIDTH = 32
@@ -251,7 +251,7 @@ endmodule
 Листинг П2.2. \emph{two\_cycle\_32\_adder.sv}
 \end{flushright}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Verilog]
 module two_cycle_32_adder (
     input logic clk_i,
     input logic [31:0] a_i,
@@ -315,7 +315,7 @@ endmodule
 Листинг П2.3. \emph{sc\_fifo.sv}
 \end{flushright}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Verilog]
 module sc_fifo #(
     parameter LGFLEN = 10,
     parameter WIDTH = 32
@@ -371,7 +371,7 @@ endmodule
 Листинг П2.4. \emph{ch\_measure\_ctl.sv}
 \end{flushright}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Verilog]
 module ch_measure_ctl #(
 	parameter DEFAULT_THRESHOLD_DELTA = 1,
 	parameter DEFAULT_D_CODE_DELTA = 1    
